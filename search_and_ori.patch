@@ -1,0 +1,42 @@
+diff '--color=auto' -uprN wofi-v1.3/src/wofi.c wofi-v1.3_patch/src/wofi.c
+--- wofi-v1.3/src/wofi.c	2022-10-07 10:35:13.000000000 +0800
++++ wofi-v1.3_patch/src/wofi.c	2023-12-19 16:05:09.652655174 +0800
+@@ -1584,6 +1584,7 @@ void wofi_init(struct map* _config) {
+ 	char* mode = map_get(config, "mode");
+ 	GtkOrientation orientation = config_get_mnemonic(config, "orientation", "vertical", 2, "vertical", "horizontal");
+ 	outer_orientation = config_get_mnemonic(config, "orientation", "vertical", 2, "horizontal", "vertical");
++	GtkOrientation inner_orientation = config_get_mnemonic(config, "inner_orientation", "vertical", 2, "vertical", "horizontal");
+ 	GtkAlign halign = config_get_mnemonic(config, "halign", "fill", 4, "fill", "start", "end", "center");
+ 	content_halign = config_get_mnemonic(config, "content_halign", "fill", 4, "fill", "start", "end", "center");
+ 	char* default_valign = "start";
+@@ -1616,6 +1617,9 @@ void wofi_init(struct map* _config) {
+ 	line_wrap = config_get_mnemonic(config, "line_wrap", "off", 4, "off", "word", "char", "word_char") - 1;
+ 	bool global_coords = strcmp(config_get(config, "global_coords", "false"), "true") == 0;
+ 	bool hide_search = strcmp(config_get(config, "hide_search", "false"), "true") == 0;
++  bool search_can_focus = strcmp(config_get(config, "search_can_focus", "true"), "true") == 0;
++	bool hide_search_icon = strcmp(config_get(config, "hide_search_icon", "false"), "true") == 0;
++
+ 	char* search = map_get(config, "search");
+ 	dynamic_lines = strcmp(config_get(config, "dynamic_lines", "false"), "true") == 0;
+ 	char* monitor = map_get(config, "monitor");
+@@ -1768,6 +1772,11 @@ void wofi_init(struct map* _config) {
+ 	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), prompt);
+ 	gtk_container_add(GTK_CONTAINER(outer_box), entry);
+ 	gtk_widget_set_child_visible(entry, !hide_search);
++  gtk_widget_set_can_focus(entry, search_can_focus);
++
++	if(hide_search_icon){
++		gtk_entry_set_icon_from_stock(GTK_ENTRY(entry), GTK_ENTRY_ICON_PRIMARY, NULL);
++	}
+ 
+ 	if(search != NULL) {
+ 		gtk_entry_set_text(GTK_ENTRY(entry), search);
+@@ -1788,7 +1797,7 @@ void wofi_init(struct map* _config) {
+ 	inner_box = gtk_flow_box_new();
+ 	gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(inner_box), GTK_SELECTION_BROWSE);
+ 	gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(inner_box), columns);
+-	gtk_orientable_set_orientation(GTK_ORIENTABLE(inner_box), orientation);
++	gtk_orientable_set_orientation(GTK_ORIENTABLE(inner_box), inner_orientation);
+ 	gtk_widget_set_halign(inner_box, halign);
+ 	gtk_widget_set_valign(inner_box, valign);
+ 
