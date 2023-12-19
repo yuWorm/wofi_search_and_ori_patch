@@ -1,0 +1,2 @@
+# wofi_search_and_ori_patch
+wofi的一个补丁，添加了几个配置，实现类似于rofi的那种横向布局
