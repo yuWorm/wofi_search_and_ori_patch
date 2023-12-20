@@ -1,7 +1,91 @@
-diff '--color=auto' -uprN wofi-v1.3/src/wofi.c wofi-v1.3_patch/src/wofi.c
---- wofi-v1.3/src/wofi.c	2022-10-07 10:35:13.000000000 +0800
-+++ wofi-v1.3_patch/src/wofi.c	2023-12-19 16:05:09.652655174 +0800
-@@ -1584,6 +1584,7 @@ void wofi_init(struct map* _config) {
+diff '--color=auto' -u ./src/main.c ../../wofi_search_and_ori_patch/wofi-v1.3_pactch/src/main.c
+--- ./src/main.c	2022-10-07 10:35:13.000000000 +0800
++++ ../../wofi_search_and_ori_patch/wofi-v1.3_pactch/src/main.c	2023-12-20 13:27:55.186183009 +0800
+@@ -97,6 +97,9 @@
+ 	printf("--search\t\t-Q\tSearch for something immediately on open\n");
+ 	printf("--monitor\t\t-o\tSets the monitor to open on\n");
+ 	printf("--pre-display-cmd\t-r\tRuns command for the displayed entries, without changing the output. %%s for the real string\n");
++	printf("--inner-orientation\tSet the direction of the inner box, default is vertical.\n");
++	printf("--search-cant-focus\tSet the direction of the inner box, default is vertical.\n");
++	printf("--hide-search-icon\tHide search box icon\n");
+ 	exit(0);
+ }
+ 
+@@ -431,6 +434,24 @@
+ 			.flag = NULL,
+ 			.val = 'r'
+ 		},
++    {
++			.name = "inner-orientation",
++			.has_arg = required_argument,
++			.flag = NULL,
++			.val = 20
++		},
++    {
++			.name = "hide-search-icon",
++			.has_arg = no_argument,
++			.flag = NULL,
++			.val = 21
++		},
++    {
++			.name = "search-cant-focus",
++			.has_arg = no_argument,
++			.flag = NULL,
++			.val = 22
++		},
+ 		{
+ 			.name = NULL,
+ 			.has_arg = 0,
+@@ -468,6 +489,9 @@
+ 	char* search = NULL;
+ 	char* monitor = NULL;
+ 	char* pre_display_cmd = NULL;
++	char* inner_orientation = NULL;
++	char* hide_search_icon = NULL;
++	char* search_can_focus = NULL;
+ 
+ 	struct wl_list options;
+ 	wl_list_init(&options);
+@@ -586,6 +610,15 @@
+ 		case 'r':
+ 			pre_display_cmd = optarg;
+ 			break;
++    case 20:
++			inner_orientation = optarg;
++			break;
++    case 21:
++			hide_search_icon = "true";
++			break;
++    case 22:
++			search_can_focus = "false";
++			break;
+ 		}
+ 	}
+ 
+@@ -778,6 +811,19 @@
+ 	if(pre_display_cmd != NULL) {
+ 		map_put(config, "pre_display_cmd", pre_display_cmd);
+ 	}
++  if(inner_orientation != NULL){
++    if(strcmp(inner_orientation, "vertical") != 0 && strcmp(inner_orientation, "horizontal") != 0){
++      map_put(config, "inner_orientation", "vertical");
++    }else{
++      map_put(config, "inner_orientation", inner_orientation);
++    }
++  }
++  if(hide_search_icon != NULL) {
++		map_put(config, "hide_search_icon", hide_search_icon);
++	}
++  if(search_can_focus != NULL) {
++		map_put(config, "search_can_focus", search_can_focus);
++	}
+ 
+ 	struct sigaction sigact = {0};
+ 	sigact.sa_handler = sig;
+diff '--color=auto' -u ./src/wofi.c ../../wofi_search_and_ori_patch/wofi-v1.3_pactch/src/wofi.c
+--- ./src/wofi.c	2022-10-07 10:35:13.000000000 +0800
++++ ../../wofi_search_and_ori_patch/wofi-v1.3_pactch/src/wofi.c	2023-12-20 12:42:32.638980994 +0800
+@@ -1584,6 +1584,7 @@
  	char* mode = map_get(config, "mode");
  	GtkOrientation orientation = config_get_mnemonic(config, "orientation", "vertical", 2, "vertical", "horizontal");
  	outer_orientation = config_get_mnemonic(config, "orientation", "vertical", 2, "horizontal", "vertical");
@@ -9,7 +93,7 @@ diff '--color=auto' -uprN wofi-v1.3/src/wofi.c wofi-v1.3_patch/src/wofi.c
  	GtkAlign halign = config_get_mnemonic(config, "halign", "fill", 4, "fill", "start", "end", "center");
  	content_halign = config_get_mnemonic(config, "content_halign", "fill", 4, "fill", "start", "end", "center");
  	char* default_valign = "start";
-@@ -1616,6 +1617,9 @@ void wofi_init(struct map* _config) {
+@@ -1616,6 +1617,9 @@
  	line_wrap = config_get_mnemonic(config, "line_wrap", "off", 4, "off", "word", "char", "word_char") - 1;
  	bool global_coords = strcmp(config_get(config, "global_coords", "false"), "true") == 0;
  	bool hide_search = strcmp(config_get(config, "hide_search", "false"), "true") == 0;
@@ -19,19 +103,19 @@ diff '--color=auto' -uprN wofi-v1.3/src/wofi.c wofi-v1.3_patch/src/wofi.c
  	char* search = map_get(config, "search");
  	dynamic_lines = strcmp(config_get(config, "dynamic_lines", "false"), "true") == 0;
  	char* monitor = map_get(config, "monitor");
-@@ -1768,6 +1772,11 @@ void wofi_init(struct map* _config) {
+@@ -1768,6 +1772,11 @@
  	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), prompt);
  	gtk_container_add(GTK_CONTAINER(outer_box), entry);
  	gtk_widget_set_child_visible(entry, !hide_search);
 +  gtk_widget_set_can_focus(entry, search_can_focus);
 +
 +	if(hide_search_icon){
-+		gtk_entry_set_icon_from_stock(GTK_ENTRY(entry), GTK_ENTRY_ICON_PRIMARY, NULL);
++		gtk_entry_set_icon_from_icon_name(GTK_ENTRY(entry), GTK_ENTRY_ICON_PRIMARY, NULL);
 +	}
  
  	if(search != NULL) {
  		gtk_entry_set_text(GTK_ENTRY(entry), search);
-@@ -1788,7 +1797,7 @@ void wofi_init(struct map* _config) {
+@@ -1788,7 +1797,7 @@
  	inner_box = gtk_flow_box_new();
  	gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(inner_box), GTK_SELECTION_BROWSE);
  	gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(inner_box), columns);
