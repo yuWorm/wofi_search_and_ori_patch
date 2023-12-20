@@ -9,21 +9,28 @@ arch=('x86_64')
 url='https://hg.sr.ht/~scoopta/wofi'
 license=('GPL3')
 depends=('wayland' 'gtk3')
-makedepends=('meson')
+makedepends=('meson' 'wget')
 source=("${pkgname}-v${pkgver}.tar.gz::https://hg.sr.ht/~scoopta/wofi/archive/v${pkgver}.tar.gz")
 sha256sums=('7644e4e995bc027b7f3f411ceda82b3e2a72a4a424f6193663c27bbf00f23067')
 
+prepare() {
+	cd "${pkgname}-v${pkgver}"/src
+	wget https://mirror.ghproxy.com/https://raw.githubusercontent.com/yuWorm/wofi_search_and_ori_patch/master/search_and_ori.patch
+	patch <./search_and_ori.patch
+	cd ../../
+}
+
 build() {
-    cd "${pkgname}-v${pkgver}"
-    meson build
-    ninja -C build
+	cd "${pkgname}-v${pkgver}"
+	meson build
+	ninja -C build
 }
 
 package() {
-    cd "${pkgname}-v${pkgver}"
-    install -Dm755 -t "${pkgdir}/usr/bin/" build/wofi
-    install -Dm644 -t "${pkgdir}/usr/share/man/man1/" man/*.1
-    install -Dm644 -t "${pkgdir}/usr/share/man/man3/" man/*.3
-    install -Dm644 -t "${pkgdir}/usr/share/man/man5/" man/*.5
-    install -Dm644 -t "${pkgdir}/usr/share/man/man7/" man/*.7
+	cd "${pkgname}-v${pkgver}"
+	install -Dm755 -t "${pkgdir}/usr/bin/" build/wofi
+	install -Dm644 -t "${pkgdir}/usr/share/man/man1/" man/*.1
+	install -Dm644 -t "${pkgdir}/usr/share/man/man3/" man/*.3
+	install -Dm644 -t "${pkgdir}/usr/share/man/man5/" man/*.5
+	install -Dm644 -t "${pkgdir}/usr/share/man/man7/" man/*.7
 }
